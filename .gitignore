@@ -1,3 +1,9 @@
 node_modules/
 .env
 *.log
+
+# 打包/上传文件，不进仓库
+*.rar
+*.zip
+*.7z
+*.tar.gz
