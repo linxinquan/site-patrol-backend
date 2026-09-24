@@ -1,5 +1,23 @@
-node_modules/
+# Python / uv
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 环境变量与密钥（不进仓库）
 .env
+.env.*
+!.env.example
+
+# 测试 / 静态检查缓存
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# 日志
 *.log
 
 # 打包/上传文件，不进仓库
