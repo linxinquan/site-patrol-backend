@@ -8,8 +8,8 @@
 from alembic import op
 from sqlalchemy import text
 
-from app.db.base import Base
 import app.models  # noqa: F401
+from app.db.base import Base
 
 revision = "0001_initial_schema"
 down_revision = None

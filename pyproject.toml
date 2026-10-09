@@ -16,7 +16,9 @@ dependencies = [
     "pyjwt>=2.9.0",
     "structlog>=24.4.0",
     "httpx>=0.27.0",
-    "oss2>=2.18.0",
+    # oss2 等 P1 真正接上 OSS 预签名直传时再加。
+    # 移除原因：它拖 crcmod（2010 年发布，无 wheel，需源码编译），与 §1.1 / §11.2 约束 8
+    # 「零原生依赖」的选型口径冲突，也会让 docker build 在 python:3.12-slim（无 gcc）里失败。
 ]
 
 [project.optional-dependencies]
@@ -36,6 +38,18 @@ packages = ["app"]
 [tool.ruff]
 line-length = 110
 target-version = "py312"
+
+[tool.ruff.lint]
+# 规则集必须显式钉死：ruff 各版本的默认规则不同（0.16 的默认集比 0.5 宽很多），
+# 不钉死则每个人 / 每台机器跑出来的结果都不一样，CI 也就失去意义。
+select = ["E", "W", "F", "I", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# FastAPI 的依赖注入：Depends(...) 就该写在参数默认值里，这是框架的推荐写法，不是 bug。
+"app/api/**" = ["B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

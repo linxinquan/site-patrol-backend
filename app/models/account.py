@@ -32,7 +32,9 @@ class Discipline(Base):
     code: Mapped[str] = mapped_column(String(32), primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     sort: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
-    is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=text("true"))
+    is_system: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=text("true")
+    )
 
 
 class User(Base):
@@ -73,9 +75,13 @@ class Role(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     # 权限点 code 数组 —— 写入时逐个校验必须在目录内（§3.1）
-    permissions: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'"))
+    permissions: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'")
+    )
     sort: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
-    is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
+    is_system: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -99,7 +105,9 @@ class Membership(SyncColumns, Base):
     disciplines: Mapped[list[str]] = mapped_column(
         ARRAY(String(32)), nullable=False, default=list, server_default=text("'{}'")
     )
-    permissions: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'"))
+    permissions: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'")
+    )
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="active", server_default="active")
 
     __table_args__ = (

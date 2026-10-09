@@ -5,7 +5,7 @@ JSONB 字段直接存客户端 toJson()，服务端不解析几何，只做检�
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, Index, Integer, String, Text, UniqueConstraint, text
+from sqlalchemy import DateTime, Float, Index, String, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 

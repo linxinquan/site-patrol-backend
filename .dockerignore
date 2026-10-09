@@ -1,0 +1,35 @@
+# 构建上下文白名单之外的都排除 —— 尤其是密钥与虚拟环境（§11.2 约束 2）。
+# 注意：Dockerfile 需要的文件不要忽略（app / migrations / scripts / alembic.ini /
+# pyproject.toml / uv.lock / README.md）。
+
+# 版本控制
+.git/
+.gitignore
+.github/
+
+# 虚拟环境与缓存
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# 密钥：绝不能进构建上下文
+.env
+.env.*
+!.env.example
+
+# 本地产物 / 打包文件
+*.log
+*.rar
+*.zip
+*.7z
+*.tar.gz
+
+# 文档不进镜像；若将来 Dockerfile 要 COPY docs，记得把下面这行删掉
+docs/

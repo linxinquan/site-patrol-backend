@@ -84,7 +84,9 @@ class ProgressEntry(SyncColumns, Base):
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=new_id)
     project_id: Mapped[str] = mapped_column(String(64), nullable=False)
     milestone_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending", server_default="pending")
+    status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="pending", server_default="pending"
+    )
     date: Mapped[datetime | None] = mapped_column(Date, nullable=True)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
     photos: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'"))

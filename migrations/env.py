@@ -8,9 +8,9 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+import app.models  # noqa: F401 —— 让全部模型注册进 metadata
 from app.core.config import get_settings
 from app.db.base import Base
-import app.models  # noqa: F401 —— 让全部模型注册进 metadata
 
 config = context.config
 config.set_main_option("sqlalchemy.url", get_settings().database_url)
