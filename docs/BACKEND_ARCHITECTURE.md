@@ -507,36 +507,36 @@ GET  /api/v1/auth/me         → 当前用户 + 项目列表 + 各项目权限
 
 ### 5.2 A 类 · 客户端业务接口（App）
 
-| 模块           | 接口                                                                                                               |
-| -------------- | ------------------------------------------------------------------------------------------------------------------ |
-| 项目（读）     | `GET /projects` · `GET /projects/{id}`                                                                             |
-| 场地位置       | `GET /projects/{id}/site-locations` · `POST/PATCH /site-locations/{id}`（App 拍照页「附近定位」写入，§2.3）          |
-| 缺陷           | `GET /defects` · `POST /defects` · `PATCH /defects/{id}` · `POST /defects/{id}/events` · `GET /defects/{id}/events` |
-| 巡场           | `GET/POST /patrol/plans` · `GET/POST /patrol/records`                                                              |
-| 量测           | `GET/POST /measure-sessions`                                                                                       |
-| 量房           | `GET/POST /room-scans`                                                                                             |
-| 拍照验收       | `GET/POST /captures`                                                                                               |
-| 施工进度（读） | `GET /progress-entries?projectId=&milestoneId=`                                                                    |
-| 报告           | `POST /reports` · `GET /reports/{id}` · `POST /reports/{id}/share`                                                  |
-| **同步**       | `POST /sync/push` · `GET /sync/pull?sinceSeq=&projectId=&limit=`                                                   |
-| AI             | `POST /ai/vision`（缺陷 / 锚物 / 网格 / 目标，按 `task` 区分）· `POST /ai/suggest`                                   |
-| 通知           | `GET /notifications` · `POST /notifications/{id}/read`                                                             |
+| 模块     | 接口                                                         |
+| -------- | ------------------------------------------------------------ |
+|          |                                                              |
+| 场地位置 | `GET /projects/{id}/site-locations` · `POST/PATCH /site-locations/{id}`（App 拍照页「附近定位」写入，§2.3） |
+| 缺陷     | `GET /defects` · `POST /defects` · `PATCH /defects/{id}` · `POST /defects/{id}/events` · `GET /defects/{id}/events` |
+| 巡场     | `GET/POST /patrol/plans` · `GET/POST /patrol/records`        |
+| 量测     | `GET/POST /measure-sessions`                                 |
+| 量房     | `GET/POST /room-scans`                                       |
+| 拍照验收 | `GET/POST /captures`                                         |
+|          |                                                              |
+| 报告     | `POST /reports` · `GET /reports/{id}` · `POST /reports/{id}/share` |
+| **同步** | `POST /sync/push` · `GET /sync/pull?sinceSeq=&projectId=&limit=` |
+| AI       | `POST /ai/vision`（缺陷 / 锚物 / 网格 / 目标，按 `task` 区分）· `POST /ai/suggest` |
+| 通知     | `GET /notifications` · `POST /notifications/{id}/read`       |
 
 ### 5.3 B 类 · 后台录入接口
 
-> 全部**只由后台界面调用**；数据的消费者是 App —— **后台不录，App 就是空的**。
+> 由后台界面调用；数据的消费者是 App 。
 
-| 模块           | 接口                                                                                                          | 录入什么                                              |
-| -------------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| 角色与权限     | `GET/POST /roles` · `PATCH/DELETE /roles/{code}` · `GET /permissions`                                          | 角色名 / code / 说明 / 权限点勾选（权限点目录＝代码常量，§3.1） |
-| 组织与用户     | `GET/POST /orgs` · `GET/POST /disciplines` · `GET/POST /users` · `POST /users/{id}/invite`                     | 单位 · 专业字典 · **就地建号**（§4.1）                |
-| 项目           | `POST /projects` · `GET /projects`（全部项目视角）                                                             | 建档（含里程碑 / 参与方）                             |
-| 成员           | `GET/POST/DELETE /projects/{id}/members`                                                                       | **可见性的唯一依据**（§3.2）                          |
-| 量尺阈值       | `GET/PUT /projects/{id}/measure-thresholds`                                                                    | 项目级 `tolMm` / `tolPct` / `judgeMaxErrorMm`         |
-| 图纸           | `GET /projects/{id}/drawings` · `GET /drawings/{id}`                                                           | 查看。**楼层随前者返回，不单独开接口**                |
-| 图纸版本       | `GET/POST /drawings/{id}/versions` · `POST /drawings/{id}/versions/{vid}/publish`                              | 上传与**发布**（事务语义见 §4.2）                     |
-| 图纸校准       | `PUT /drawings/{id}/versions/{vid}/calibration`                                                                | ⚠️ **本版不接**（校准不在本版界面，§4.3）；接口位保留  |
-| 施工进度（写） | `POST /progress-entries`                                                                                       | 第一版由后台登录态录入 → `source=admin`（§2.3）；施工方自报走 `/share/{token}`，**v1.2** |
+| 模块           | 接口                                                         | 录入什么                                                     |
+| -------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 角色与权限     | `GET/POST /roles` · `PATCH/DELETE /roles/{code}` · `GET /permissions` | 角色名 / code / 说明 / 权限点勾选（权限点目录＝代码常量，§3.1） |
+| 组织与用户     | `GET/POST /orgs` · `GET/POST /disciplines` · `GET/POST /users` · `POST /users/{id}/invite` | 单位 · 专业字典 · **就地建号**（§4.1）                       |
+| 项目           | `POST /projects` · `GET /projects`（全部项目视角）           | 建档（含里程碑 / 参与方）                                    |
+| 成员           | `GET/POST/DELETE /projects/{id}/members`                     | **可见性的唯一依据**（§3.2）                                 |
+| 量尺阈值       | `GET/PUT /projects/{id}/measure-thresholds`                  | 项目级 `tolMm` / `tolPct` / `judgeMaxErrorMm`                |
+| 图纸           | `GET /projects/{id}/drawings` · `GET /drawings/{id}`         | 查看。**楼层随前者返回，不单独开接口**                       |
+| 图纸版本       | `GET/POST /drawings/{id}/versions` · `POST /drawings/{id}/versions/{vid}/publish` | 上传与**发布**（事务语义见 §4.2）                            |
+|                |                                                              |                                                              |
+| 施工进度（写） | `POST /progress-entries`                                     | 第一版由后台登录态录入 → `source=admin`（§2.3）              |
 
 > **角色与权限这一组只对 `admin` 开放** —— 其余角色的权限点里不含它们，§5.5 矩阵因此不列此组。
 > `GET /permissions` 是**只读目录**（不含业务数据），列在这里是因为它只服务角色管理页，
@@ -559,12 +559,12 @@ GET  /api/v1/auth/me         → 当前用户 + 项目列表 + 各项目权限
 
 ### 5.4 C 类 · 基础与通道接口（两边共用 / 免登录）
 
-| 模块   | 接口                                                                                                                       |
-| ------ | -------------------------------------------------------------------------------------------------------------------------- |
-| 认证   | `POST /auth/login` · `/auth/refresh` · `/auth/logout` · `GET /auth/me`（返回结构见 §2.3 的 `LoginResult` / `AuthProfile`） |
-| 文件   | `POST /files/presign` · `POST /files/complete` · `GET /files/{id}`（签名 URL）                                              |
-| 运维   | `GET /health`（聚合 DB / OSS / AI 上游）                                                                                    |
-| 分享页 | `GET /share/{token}`（免登录网页，施工方侧）                                                                                |
+| 模块 | 接口                                                         |
+| ---- | ------------------------------------------------------------ |
+| 认证 | `POST /auth/login` · `/auth/refresh` · `/auth/logout` · `GET /auth/me`（返回结构见 §2.3 的 `LoginResult` / `AuthProfile`） |
+| 文件 | `POST /files/presign` · `POST /files/complete` · `GET /files/{id}`（签名 URL） |
+| 运维 | `GET /health`（聚合 DB / OSS / AI 上游）                     |
+|      |                                                              |
 
 ### 5.5 业务角色名单与接口权限
 
@@ -867,8 +867,8 @@ CRDT、实时协同编辑、图片走增量同步（图片单独走对象存储�
 
 | 阶段                   | 周期   | 内容                                                                                                                                                                                 | 验收                                                                          |
 | ---------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| **P0 骨架与收敛**      | 1–2 周 | 新仓库 + **PostgreSQL**（Redis 延后）+ ORM 首版建表与迁移 + JWT 登录 + 统一入口 + `/api/v1/ai/vision` **鉴权 / 记账 / 缓存层（转发现有网关，不搬入）**                                | App 只改一个 `BASE_URL` 后**现有 AI 识别零回归**；旧 `/api/vision` 保留转发    |
-| **P1 主链上云**        | 2–3 周 | 项目 / 图纸 / 成员 / 缺陷 CRUD + 缺陷事件状态机 + **OSS 预签名直传** + **后台操作界面可用**（项目 → 成员 → 图纸 → 发布 → 进度）+ SyncEngine（缺陷先行）                              | 两台设备协作一条缺陷：A 记录 → B 处置 → 施工方回复，双方状态一致且离线可写；**后台传的图 = App 用的图** |
+| **P0 骨架与收敛**      | 1 周   | 新仓库 + **PostgreSQL**（Redis 延后）+ ORM 首版建表与迁移 + 统一入口与**统一错误响应** + **工程基线**（ruff 规则集钉死 · CI 跑 `ruff check` 与 `alembic check` · uv 锁文件构建镜像）。**P0 不再新增业务接口** —— 只落地基础通道（JWT 登录 / 权限点目录 / 角色 CRUD）作为 P1 的样板 | `alembic upgrade head` 从零建表通过；`ruff check` 与 `alembic check` 在 CI 里为绿；`openapi.json` 可生成 |
+| **P1 主链上云**        | 3–4 周 | 项目 / 图纸 / 成员 / 缺陷 CRUD + 缺陷事件状态机 + **OSS 预签名直传** + **后台操作界面可用**（项目 → 成员 → 图纸 → 发布 → 进度）+ SyncEngine（缺陷先行） + `/api/v1/ai/vision` **鉴权 / 记账 / 缓存层**（转发现有网关，不搬入；迁移期保留旧 `/api/vision` 转发，§5.6） | 两台设备协作一条缺陷：A 记录 → B 处置 → 施工方回复，双方状态一致且离线可写；**后台传的图 = App 用的图**；**App 只改一个 `BASE_URL` 后现有 AI 识别零回归** |
 | **P2 全量同步 + 分享** | 2–3 周 | 巡场 / 量测 / 量房 / 拍照验收上行 + 增量同步 + 报告分享链接 + 站内通知                                                                                                                | 施工方扫码打开分享链接逐条回复；报告在线可查                                  |
 | **P3 治理与增值**      | 持续   | AI 缓存与成本看板、缺陷知识库 RAG（`/ai/suggest`）、跨项目统计、多项目 / 多租户、审计合规                                                                                             | AI 成本可见；整改建议来自历史缺陷库                                           |
 
@@ -916,6 +916,7 @@ CRDT、实时协同编辑、图片走增量同步（图片单独走对象存储�
 
 | 版本 | 日期       | 变更                                                                                                                            |
 | ---- | ---------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| v3.3 | 2026-10-09 | **P0 收窄为纯工程底座，不新增业务接口**：§12 的 `/api/v1/ai/vision` 鉴权 / 记账 / 缓存层**从 P0 移到 P1**（P0 验收随之改为「迁移可执行 + 模型无漂移 + CI 为绿」）；P0 补工程基线（统一错误响应 · ruff 规则集钉死 · CI · uv 锁文件构建镜像）。`alembic.ini` 改为纯 ASCII（configparser 按系统 locale 读 ini，中文注释会让 Windows 上所有 alembic 命令崩） |
 | v3.2 | 2026-09-22 | **角色可维护**：删除「第一版不出角色维护界面」旧结论（§3.1 / §4.3 / §5.5）；§3.1 新增**权限点目录**（24 个 · 分组 + 中文名，代码常量不建表）与**角色四条数据约束**；新增角色接口 `GET/POST/PATCH/DELETE /roles` + `GET /permissions`（§5.3）；§4.1 补角色管理页一行与内置角色 seed；§2.3 补 `roles` 字段口径与「权限点目录不建表」；§5.3 补该组接口模型（`Role` / `RoleCreate` / `RoleUpdate` / `Permission`） |
 | v3.1 | 2026-09-22 | **接口清单按「数据由谁产出」分三类**（A 客户端业务 / B 后台录入 / C 基础，§5.1~5.4）；新增 **§5.5 业务角色名单与接口权限**（7 个角色 × 接口矩阵）；§3.1 权限点清单补全至与矩阵一一对应；§1.2 只留范围内定论；关闭原待定项 7 / 8 |
 | v3.0 | 2026-09-22 | **按「选型已定 → 设计后端具体内容」重新组织**：数据库设计前置（§2）；新增 **§4 后台操作界面的后端支撑**（含「发布」的事务语义）；删除客户端改造相关内容（归 `site-patrol` 仓库）；清理已定结论的中间态与悬空引用 |
