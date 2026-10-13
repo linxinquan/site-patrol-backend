@@ -1,9 +1,10 @@
-"""应用入口：单一入口 /api/v1/** + GET /health（§1.4 · §11.2）。"""
+"""应用入口：单一入口 /api/v1/** + GET /health（§1.4 · §10.2）。"""
 
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -12,6 +13,7 @@ from app.api.v1 import api_router
 from app.core.config import get_settings
 from app.core.errors import AppError
 from app.core.logging import get_logger, setup_logging
+from app.core.middleware import AccessLogMiddleware
 from app.db.session import dispose_engine
 
 settings = get_settings()
@@ -36,9 +38,26 @@ app = FastAPI(
 
 app.include_router(api_router)
 
+# ---- 中间件 ----
+# 顺序有讲究：Starlette 里「后添加的在外层」，所以访问日志包住 CORS，
+# 浏览器发的 OPTIONS 预检（哪怕被拒）也会留下痕迹。
+#
+# CORS 只在配置了白名单时启用：生产是同源（Ingress 按路径分流，§10.2 约束 6），
+# ALLOWED_ORIGINS 留空就等于不装这层，生产零 CORS 响应头。
+if settings.cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+app.add_middleware(AccessLogMiddleware)
+
 
 def _err(status: int, code: str, msg: str) -> JSONResponse:
-    """统一错误响应体（§5）—— 所有出口都走它，保证前端只解析一种形状。"""
+    """统一错误响应体（§4）—— 所有出口都走它，保证前端只解析一种形状。"""
     return JSONResponse(
         status_code=status,
         content={"ok": False, "data": None, "err": {"code": code, "msg": msg}},
@@ -54,7 +73,7 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
 async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     """请求体 / 查询参数校验失败 → 422，但**仍然是 {ok,data,err}**。
 
-    不接管的话 FastAPI 返回 `{"detail": [...]}`，前端按 `err.code` 解析就会炸（§5）。
+    不接管的话 FastAPI 返回 `{"detail": [...]}`，前端按 `err.code` 解析就会炸（§4）。
     """
     errors = exc.errors()
     first = errors[0] if errors else {}
@@ -89,7 +108,7 @@ def _component_configured(*values: str) -> str:
 
 @app.get("/health", tags=["运维 C"], summary="健康检查（liveness + readiness）")
 async def health() -> JSONResponse:
-    """readiness 不通过返回 503 —— 避免把坏实例挂进流量（§11.2 约束 4）。
+    """readiness 不通过返回 503 —— 避免把坏实例挂进流量（§10.2 约束 4）。
 
     DB 做真实连通性探测；OSS / AI 只报配置状态，不打网络请求（探针要廉价且不被上游拖慢）。
     """
