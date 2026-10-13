@@ -56,7 +56,7 @@ PERMISSION_CODES: frozenset[str] = frozenset(p.code for p in PERMISSIONS)
 # 后台管理员（admin）恒为全部权限点（§3.1 约束 4）
 ALL_PERMISSIONS: tuple[str, ...] = tuple(p.code for p in PERMISSIONS)
 
-# 内置角色的初始权限点（§5.5 矩阵）—— 只是 seed 初值，之后由后台界面维护
+# 内置角色的初始权限点（§4.5 矩阵）—— 只是 seed 初值，之后由后台界面维护
 DEFAULT_ROLE_PERMISSIONS: dict[str, tuple[str, ...]] = {
     "admin": ALL_PERMISSIONS,
     "project_manager": (

@@ -1,7 +1,7 @@
 """报告归档（§2.3）：reports。
 
 同一份报告导出 PDF / Word / Excel / 网页链接时合并为一条（formats 是数组），不做重复建卡。
-客户端归档只存元数据，正文按需重导（§9）。
+客户端归档只存元数据，正文按需重导（§8）。
 """
 
 from datetime import datetime

@@ -16,7 +16,7 @@ class Capture(SyncColumns, Base):
     """拍照验收记录。
 
     ai_result = AI 原始识别；confirmed_result = 同一数组加上人工确认 / 转入状态。
-    AI 输出不直接改任何工单状态 —— 必须经人工确认后才成为业务状态（§8 红线）。
+    AI 输出不直接改任何工单状态 —— 必须经人工确认后才成为业务状态（§7 红线）。
     """
 
     __tablename__ = "captures"

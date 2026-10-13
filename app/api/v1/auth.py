@@ -1,4 +1,4 @@
-"""C 类 · 认证（§3.3 · §5.4）。"""
+"""C 类 · 认证（§3.3 · §4.4）。"""
 
 from datetime import datetime, timezone
 

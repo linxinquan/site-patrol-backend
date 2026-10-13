@@ -19,7 +19,7 @@ from app.core.security import hash_password
 from app.db.session import SessionFactory, dispose_engine
 from app.models import Discipline, Role, User
 
-# 内置角色（§5.5）—— seed 只是初始数据，之后的新增 / 改权限点全走后台界面
+# 内置角色（§4.5）—— seed 只是初始数据，之后的新增 / 改权限点全走后台界面
 BUILTIN_ROLES: tuple[tuple[str, str, str, int], ...] = (
     ("admin", "后台管理员（操作者）", "全局操作者，可见性与权限 = 全部", 1),
     ("project_manager", "项目负责人", "本项目全部数据", 10),
@@ -76,7 +76,7 @@ async def seed_admin(session) -> None:
         User(
             name="后台管理员",
             username=username,
-            # 全局操作者标记：admin 不进 memberships，可见性 = 全部项目（§5.5）
+            # 全局操作者标记：admin 不进 memberships，可见性 = 全部项目（§4.5）
             role="admin",
             status="active",
             password_hash=hash_password(password),

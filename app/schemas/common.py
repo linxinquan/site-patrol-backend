@@ -1,4 +1,4 @@
-"""统一响应：{ ok, data, err:{ code, msg } }（§5）。
+"""统一响应：{ ok, data, err:{ code, msg } }（§4）。
 
 字段名对外一律 camelCase，与客户端 Dart 模型一致。
 """

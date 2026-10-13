@@ -1,4 +1,4 @@
-"""structlog → JSON 到 stdout（§11.2 约束 3：日志不写文件、不做轮转，由集群统一采集）。"""
+"""structlog → JSON 到 stdout（§10.2 约束 3：日志不写文件、不做轮转，由集群统一采集）。"""
 
 import logging
 import sys

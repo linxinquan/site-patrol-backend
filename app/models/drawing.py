@@ -48,7 +48,7 @@ class Drawing(Base):
 
 class DrawingVersion(Base):
     """图纸版本。同一 drawing_id 任一时刻只允许一行 state='published'，
-    旧版置 archived 并锁定只读（§4.2 由服务层保证）。
+    旧版置 archived 并锁定只读（§2.3 由服务层保证）。
     """
 
     __tablename__ = "drawing_versions"

@@ -1,7 +1,7 @@
 """认证与权限依赖（§3.1 · §3.2）。
 
 判定口径：
-- `admin` 是唯一破例 —— **不进 memberships**，可见性 = 全部项目，权限 = 全部权限点（§5.5）。
+- `admin` 是唯一破例 —— **不进 memberships**，可见性 = 全部项目，权限 = 全部权限点（§4.5）。
   本实现以 `users.role == 'admin'` 作为全局操作者标记（客户端 `User.role` 同名同义）。
 - 其余角色一律由 `memberships` 决定可见性，由 `roles.permissions` **现读**判定权限点；
   `memberships.permissions` 只是下发给 App 的快照，不作校验依据。

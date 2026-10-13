@@ -10,7 +10,7 @@ from app.db.base import Base, new_id
 
 
 class AiCall(Base):
-    """AI 调用记账（§8 成本可见）。缓存键 = image_sha256 + prompt_version。"""
+    """AI 调用记账（§7 成本可见）。缓存键 = image_sha256 + prompt_version。"""
 
     __tablename__ = "ai_calls"
 
@@ -43,7 +43,7 @@ class AiCall(Base):
 
 
 class Notification(Base):
-    """站内消息（推送通道可后补，§10）。"""
+    """站内消息（推送通道可后补，§9）。"""
 
     __tablename__ = "notifications"
 
@@ -89,7 +89,7 @@ class AuditLog(Base):
 
 
 class Change(Base):
-    """同步变更流（§6.2）—— 客户端只需 1 个 seq 游标。
+    """同步变更流（§5.2）—— 客户端只需 1 个 seq 游标。
 
     ⚠️ 写入必须走 app.db.changes.record_change：同一事务开头取 pg_advisory_xact_lock，
     使「分配顺序 ≡ 提交顺序」，否则客户端会静默丢变更。
