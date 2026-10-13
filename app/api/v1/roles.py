@@ -45,6 +45,29 @@ def _to_out(role: Role, member_count: int) -> RoleOut:
     )
 
 
+async def _sync_membership_snapshot(session: DbSession, role: Role) -> int:
+    """把该角色下所有成员行的下发快照刷成角色当前值，返回刷了几行。
+
+    `memberships.permissions` / `role_name` 是**下发快照**（校验永远现读 `roles`，§3.1），
+    但快照过期会让 App 拿到旧权限点与旧角色名 —— 所以改角色时必须在**同一个事务里**刷掉，
+    否则改完角色到刷新之间有个窗口，能拿到不一致的数据（§13 第 11 条）。
+
+    逐行改而不是一条 bulk `update()`：团队 3–4 人、每行成员数极少，换来的是 ORM 会话状态
+    一定与库一致 —— bulk update 对 JSONB 列的会话同步并不可靠。
+
+    每行都 `list(...)` 复制一份：JSONB 是可变类型，多行共用同一个 list 对象会让脏追踪串味。
+    """
+    members = (
+        await session.execute(select(Membership).where(Membership.role_code == role.code))
+    ).scalars().all()
+    now = datetime.now(tz=timezone.utc)
+    for member in members:
+        member.permissions = list(role.permissions or [])
+        member.role_name = role.name
+        member.updated_at = now
+    return len(members)
+
+
 @router.get("", response_model=ApiResponse[list[RoleOut]], summary="角色列表（含在用人数）")
 async def list_roles(
     session: DbSession,
@@ -99,8 +122,6 @@ async def update_role(
         if unknown:
             raise AppError(f"权限点不在目录内：{', '.join(unknown)}", code="invalid_permission")
         role.permissions = list(payload.permissions)
-        # TODO(§3.1)：同一 role_code 的 memberships.permissions 快照需刷新；
-        # 第一版 App 不消费权限点，不阻塞，但改角色的路径必须保留这个动作。
 
     if payload.name is not None:
         role.name = payload.name
@@ -109,6 +130,10 @@ async def update_role(
     if payload.sort is not None:
         role.sort = payload.sort
     role.updated_at = datetime.now(tz=timezone.utc)
+
+    # 快照与角色改动同事务落库 —— 放在字段都定稿之后，一次刷 permissions + role_name
+    if payload.permissions is not None or payload.name is not None:
+        await _sync_membership_snapshot(session, role)
 
     await session.commit()
     counts = await _member_counts(session)
