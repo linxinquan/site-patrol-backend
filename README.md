@@ -11,7 +11,7 @@
 app/
   core/       配置（全环境变量）· structlog · scrypt/JWT · 权限点目录 · 统一错误
   db/         ORM 基类与同步公共列 · 异步会话 · 变更流（pg_advisory_xact_lock）
-  models/     23 张表 = 客户端建模 16 + 服务端 7
+  models/     24 张表 = 客户端建模 16 + 服务端 8
   schemas/    Pydantic v2 模型（即 openapi 契约，前端据此生成 types）
   api/v1/     /api/v1/** 路由（A 客户端业务 / B 后台录入 / C 基础与通道）
 migrations/   Alembic（0001 初始建表）
@@ -111,7 +111,7 @@ uv run alembic check               # 模型与迁移是否漂移（需先连上�
 
 **P0 已完成**（按 §11 v3.3：P0 是纯工程底座，**不新增业务接口**）：
 
-- 工程结构 · 23 张表模型 · Alembic 初始迁移 · seed
+- 工程结构 · 24 张表模型 · Alembic 迁移（0001 建表 + 0002 refresh 令牌表）· seed
 - 基础通道：JWT 登录 / 刷新 / me · 权限点目录 · 角色 CRUD（含四条数据约束）
 - `/health`（liveness + readiness）· 统一响应与统一错误码
 - 工程基线：**统一错误响应**（框架的 422 / 404 / 405 也走 `{ok,data,err}`）·
@@ -126,5 +126,4 @@ OSS 预签名直传 · sync push/pull · **`/ai/vision` 鉴权 / 记账 / 缓存
 
 | 缺口 | 位置 | 说明 |
 | --- | --- | --- |
-| refresh 轮换不吊销 | `app/api/v1/auth.py` | §3.3 要求「旧的立即失效」、logout 吊销；当前只是签发新令牌。待定落表还是Redis（§13 第 10 条），建议 P1 |
 | 改角色不刷新权限快照 | `app/api/v1/roles.py` | §13 第 11 条；App 第一版不消费权限点，不阻塞 |

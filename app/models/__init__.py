@@ -1,6 +1,6 @@
-"""23 张表 = 客户端建模 16 + 服务端 7（§2.3）。"""
+"""24 张表 = 客户端建模 16 + 服务端 8（§2.3）。"""
 
-from app.models.account import Discipline, Membership, Org, Role, User
+from app.models.account import Discipline, Membership, Org, RefreshToken, Role, User
 from app.models.capture import Capture, MeasureSession, RoomScan
 from app.models.defect import DEFECT_ACTIONS, Defect, DefectEvent
 from app.models.drawing import Drawing, DrawingVersion, FileRecord
@@ -30,6 +30,7 @@ __all__ = [
     "ProgressEntry",
     "Project",
     "Report",
+    "RefreshToken",
     "Role",
     "RoomScan",
     "SiteLocation",

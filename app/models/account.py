@@ -124,3 +124,39 @@ class Membership(SyncColumns, Base):
             postgresql_where=text("client_id IS NOT NULL AND deleted_at IS NULL"),
         ),
     )
+
+
+class RefreshToken(Base):
+    """refresh 令牌及其状态（§3.3：轮换时旧的立即失效 → 落表 + `status`）。
+
+    **只存 `jti`，不存令牌本体** —— `jti` 是 JWT 内置的唯一标识（见 `core/security.py`），
+    库里被读走也换不出一个可用的令牌。
+
+    `status` 三态：
+    - `active`   可用
+    - `rotated`  已被轮换替换（即「旧的立即失效」）
+    - `revoked`  登出，或检测到重放而被批量吊销
+
+    已是 `rotated` 的令牌再次被使用 = 重放（正常客户端不会拿旧令牌来刷新），
+    此时吊销该用户全部令牌 —— 泄露的旧令牌意味着会话已不可信（§3.3）。
+
+    服务端表：不带同步公共列（客户端不读写会话，§2.2）。
+    """
+
+    __tablename__ = "refresh_tokens"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    jti: Mapped[str] = mapped_column(String(32), nullable=False, unique=True)
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="active", server_default="active"
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    # 轮换后指向新令牌行；被吊销时为空
+    rotated_to: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (Index("ix_refresh_tokens_user_status", "user_id", "status"),)
