@@ -7,12 +7,13 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import auth, permissions, roles, stub_admin, stub_app, stub_files
+from app.api.v1 import auth, permissions, projects, roles, stub_admin, stub_app, stub_files
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth.router, tags=["认证 C"])
 api_router.include_router(permissions.router, tags=["角色与权限 B"])
 api_router.include_router(roles.router, tags=["角色与权限 B"])
+api_router.include_router(projects.router, tags=["项目与成员 B"])
 
 # 契约先行的 501 骨架 —— P1 会逐个掏空，最终整块删除
 api_router.include_router(stub_app.router, tags=["A 客户端业务 · 骨架"])

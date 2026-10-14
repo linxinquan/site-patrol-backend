@@ -63,32 +63,7 @@ async def invite_user(id: str) -> None:
     _todo("就地建号 / 邀请")
 
 
-# ---- 项目与成员（成员是可见性的唯一依据，§3.2）----
-
-
-@router.post("/projects", summary="建档（含里程碑 / 参与方）", responses=_STUB)
-async def create_project() -> None:
-    _todo("项目建档")
-
-
-@router.get("/projects", summary="全部项目视角列表", responses=_STUB)
-async def list_projects() -> None:
-    _todo("项目列表")
-
-
-@router.get("/projects/{id}/members", summary="成员列表", responses=_STUB)
-async def list_members(id: str) -> None:
-    _todo("成员列表")
-
-
-@router.post("/projects/{id}/members", summary="新增成员", responses=_STUB)
-async def add_member(id: str) -> None:
-    _todo("新增成员")
-
-
-@router.delete("/projects/{id}/members", summary="移除成员", responses=_STUB)
-async def remove_member(id: str) -> None:
-    _todo("移除成员")
+# ---- 项目与成员：已实现在 app/api/v1/projects.py（契约先行时先在此占位，现已摘除）----
 
 
 @router.get("/projects/{id}/measure-thresholds", summary="量尺阈值", responses=_STUB)

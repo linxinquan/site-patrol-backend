@@ -118,9 +118,16 @@ uv run alembic check               # 模型与迁移是否漂移（需先连上�
   ruff 规则集在 `pyproject.toml` 钉死 · CI（`ruff check` + PostgreSQL 上的
   `alembic upgrade head` / `alembic check`）· 镜像用 `uv.lock` 构建（`.dockerignore` 已挡密钥）
 
-**P1 起做**（§11）：项目与成员 · 图纸上传与发布（§2.3 事务语义）· 缺陷主链与事件状态机 ·
-OSS 预签名直传 · sync push/pull · **`/ai/vision` 鉴权 / 记账 / 缓存层（已从 P0 移来）** ·
-报告分享 · 通知。
+**P1 进行中**（§11）：
+
+- ✅ **项目与成员 CRUD**（`POST/GET /projects` · `GET/POST/DELETE /projects/{id}/members`）
+  —— 成员是项目可见性的唯一依据（§3.2）。三处按文档既有定论落地：**只对 admin 开放**
+  （§4.5「B 类的调用方就是它」）；`projects` 走档案类全量拉取**不写 changes**、
+  `memberships` 是同步实体**每次写都 `record_change` 且同事务**（§5.2）；移除成员用软删，
+  加回来时恢复同一行（`uniq(user_id, project_id)` 不含 `deleted_at`，新建会撞约束）。
+- ⬜ 待做：图纸上传与发布（§2.3 事务语义）· 缺陷主链与事件状态机 · sync push/pull ·
+  量尺阈值 · **`/ai/vision` 鉴权 / 记账 / 缓存层（§12 列为第一风险：网关当前无鉴权）** ·
+  OSS 预签名直传（**等凭据**）· 报告分享 · 通知。
 
 ## 已知缺口（接手前先知道）
 
