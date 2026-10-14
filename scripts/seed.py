@@ -1,11 +1,15 @@
-"""初始数据（可重复执行）：专业字典 + 7 个内置角色 + 首个管理员。
+"""初始数据（可重复执行）：专业字典 + 7 个内置角色 + 管理员 + 2 个演示账号。
 
 用法：
     uv run alembic upgrade head
     uv run python scripts/seed.py
 
-管理员初始凭据：
+初始凭据：
     ADMIN_USERNAME（默认 admin）· ADMIN_PASSWORD（未设置时随机生成并打印一次）
+    DEMO_USER_PASSWORD（未设置时两个演示账号各自随机生成并打印一次）
+
+演示账号只有账号、**没有成员关系** —— 可见性由 memberships 决定（§3.2），
+要它们能看到项目得先建项目再加成员，详见 DEMO_USERS 处注释。
 """
 
 import asyncio
@@ -16,6 +20,7 @@ from sqlalchemy import select
 
 from app.core.permissions import ALL_PERMISSIONS, DEFAULT_ROLE_PERMISSIONS
 from app.core.security import hash_password
+from app.db.base import new_id
 from app.db.session import SessionFactory, dispose_engine
 from app.models import Discipline, Role, User
 
@@ -32,6 +37,21 @@ BUILTIN_ROLES: tuple[tuple[str, str, str, int], ...] = (
 
 # 专业字典（§2.3）：第一版只 structure 一条；扩展必须与客户端 DefectCategory 枚举同步发版
 DISCIPLINES: tuple[tuple[str, str, int], ...] = (("structure", "结构", 10),)
+
+# 演示账号（初始化即有，省得联调时还要现建人）
+DEMO_USERS: tuple[tuple[str, str, str], ...] = (
+    # (登录名, 姓名, 打算在项目里担任的角色)
+    ("pm_demo", "项目负责人（演示）", "project_manager"),
+    ("dl_demo", "专业负责人（演示）", "discipline_lead"),
+)
+
+# ⚠️ 上面两个账号**不带任何 memberships**：非 admin 用户的可见性完全由 memberships 决定
+# （§3.2「成员是可见性的唯一依据」），所以它们登录后 `GET /auth/me` 返回的 projects 是空的。
+# 要真正用起来：建项目 → 用 `POST /projects/{id}/members` 把它们加进去。
+#
+# `users.role` 也**刻意留空**：那一列的注释写着「展示用角色，不作为校验依据」，
+# 真正的角色语义由 `memberships.role_code` 表达。往里塞 'project_manager' 只会造出第二份
+# 事实来源，迟早和 memberships 对不上。
 
 
 async def seed_disciplines(session) -> None:
@@ -85,11 +105,44 @@ async def seed_admin(session) -> None:
     print(f"[seed] 已创建管理员：{username} / {password}（请立即修改）")
 
 
+async def seed_demo_users(session) -> None:
+    """两个演示账号：项目负责人 / 专业负责人（`DEMO_USERS`）。
+
+    密码统一走 `DEMO_USER_PASSWORD`；没设就各自随机生成并打印一次 —— 与管理员同一个做法，
+    库里只存 scrypt 哈希。正式环境不想要演示账号，删掉 `DEMO_USERS` 即可。
+    """
+    shared = os.getenv("DEMO_USER_PASSWORD")
+    for username, name, intended_role in DEMO_USERS:
+        existing = (
+            await session.execute(select(User).where(User.username == username))
+        ).scalar_one_or_none()
+        if existing is not None:
+            print(f"[seed] 演示账号已存在：{username}")
+            continue
+
+        password = shared or secrets.token_urlsafe(12)
+        session.add(
+            User(
+                id=new_id(),
+                name=name,
+                username=username,
+                # role 留空：可见性与角色都由 memberships 决定（§3.2），见 DEMO_USERS 上方注释
+                status="active",
+                password_hash=hash_password(password),
+            )
+        )
+        print(
+            f"[seed] 已创建演示账号：{username} / {password}"
+            f"（建项目后把它加为 {intended_role} 才有可见项目）"
+        )
+
+
 async def main() -> None:
     async with SessionFactory() as session:
         await seed_disciplines(session)
         await seed_roles(session)
         await seed_admin(session)
+        await seed_demo_users(session)
         await session.commit()
     await dispose_engine()
     print("[seed] 完成")

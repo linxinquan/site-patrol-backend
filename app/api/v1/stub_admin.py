@@ -54,13 +54,7 @@ async def create_user() -> None:
     _todo("新建用户")
 
 
-@router.post("/users/{id}/invite", summary="就地建号 / 邀请", responses=_STUB)
-async def invite_user(id: str) -> None:
-    """「就地建号」：同一请求里建号 + 建成员关系并返回可用账号（§4.3）。
-
-    `users.username` 唯一，需防重。初始凭据策略见 §13 第 6 条（尚未定论）。
-    """
-    _todo("就地建号 / 邀请")
+# ---- 用户就地建号（复合语义）已实现在 app/api/v1/projects.py ----
 
 
 # ---- 项目与成员：已实现在 app/api/v1/projects.py（契约先行时先在此占位，现已摘除）----

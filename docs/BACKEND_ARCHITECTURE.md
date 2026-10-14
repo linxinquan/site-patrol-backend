@@ -493,7 +493,7 @@ GET  /api/v1/auth/me         → 当前用户 + 项目列表 + 各项目权限
 | 模块           | 接口                                                         | 录入什么                                                     |
 | -------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | 角色与权限     | `GET/POST /roles` · `PATCH/DELETE /roles/{code}` · `GET /permissions` | 角色名 / code / 说明 / 权限点勾选（权限点目录＝代码常量，§3.1） |
-| 组织与用户     | `GET/POST /orgs` · `GET/POST /disciplines` · `GET/POST /users` · `POST /users/{id}/invite` | 单位 · 专业字典 · **就地建号**（见下）                       |
+| 组织与用户     | `GET/POST /orgs` · `GET/POST /disciplines` · `GET/POST /users` · `POST /projects/{id}/members/invite` | 单位 · 专业字典 · **就地建号**（见下）                       |
 | 项目           | `POST /projects` · `GET /projects`（全部项目视角）           | 建档（含里程碑 / 参与方）                                    |
 | 成员           | `GET/POST/DELETE /projects/{id}/members`                     | **可见性的唯一依据**（§3.2）                                 |
 | 量尺阈值       | `GET/PUT /projects/{id}/measure-thresholds`                  | 项目级 `tolMm` / `tolPct` / `judgeMaxErrorMm`                |
@@ -509,6 +509,13 @@ GET  /api/v1/auth/me         → 当前用户 + 项目列表 + 各项目权限
 > **「就地建号」是这组里唯一有复合语义的动作**：后台成员页填「姓名 + 手机号 + 单位」时，
 > 若 `users` 里没有这个人，后端要能在**同一请求里建号 + 建成员关系**，并返回可用账号。
 > ⚠️ `users.username` 唯一，需要防重。
+>
+> **路径改为 `POST /projects/{id}/members/invite`**（原写作 `POST /users/{id}/invite`）：那里的
+> `{id}` 指什么没写清，而「建成员关系」必然要指明是哪个项目；放进 `/projects/{id}/members/` 之下，
+> 调用方不必猜 URL 里的 id 是 user 还是 project。**登录名**由 `phone` 兜底（对施工方 / 设计人员
+> 本来就是天然记忆点），`phone` 与 `username` 都不传则无法确定唯一登录名，直接报错。
+> **初始凭据**：新建账号时随机生成密码、**只在响应里返回一次**，库里只存 scrypt 哈希 ——
+> 沿用 `scripts/seed.py` 建管理员的先例；待定项 6（管理员设初始密码 vs 一次性口令）定论后要同步改这里。
 >
 > **这一组的模型**（Pydantic，前端照它生成 `types.ts`，不手写字段名 —— §4.8）：
 >
@@ -891,6 +898,7 @@ CRDT、实时协同编辑、图片走增量同步（图片单独走对象存储�
 
 | 版本 | 日期       | 变更                                                                                                                            |
 | ---- | ---------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| v3.11 | 2026-10-14 | **「就地建号」落地 + seed 增加两个演示账号**。① 实现 `POST /projects/{id}/members/invite`（§4.3），**路径较原文调整**：原文写 `POST /users/{id}/invite`，但那里 `{id}` 指什么没说清，而「建成员关系」必然要指明是哪个项目 —— 放到 `/projects/{id}/members/` 之下，调用方不必猜 id 是 user 还是 project。复合语义实测：① 用户不存在 → 建号 + 建成员，`createdUser=true` 且**初始密码只在响应里返回一次**；② 用户已存在但不在本项目 → **只建成员关系，不重复建号也不返回密码**（`createdUser=false`）；③ 已是本项目成员 → 409；④ `phone` 与 `username` 都不给 → 400（无法确定唯一登录名）。登录名由 `phone` 兜底 —— 对施工方 / 设计人员本来就是天然记忆点。初始凭据沿用 seed 建管理员的先例（随机生成、只返回一次），**待定项 6 定论后要同步改这里**。② `scripts/seed.py` 增加 `pm_demo` / `dl_demo` 两个演示账号（密码走 `DEMO_USER_PASSWORD`，未设则各自随机并打印一次）。⚠️ **它们刻意不带任何 memberships** —— 非 admin 用户的可见性完全由 memberships 决定（§3.2），所以登录后 `projects` 为空，要用起来得先建项目再把账号加进去；`users.role` 也刻意留空（那列是「展示用角色，不作为校验依据」，塞值等于造第二份事实来源） |
 | v3.10 | 2026-10-14 | **P1 第一块落地：项目与成员 CRUD**（`POST/GET /projects` · `GET/POST/DELETE /projects/{id}/members`）。三处按文档既有定论落地，写在这里防止后来「照着直觉」改回去：① **只对 admin 开放** —— §4.5 明写「B 类的调用方就是它」，矩阵里给其他角色的「读」是**数据可见性**（走 `sync/pull` 落本地），不是让他们调 B 类接口。② **两类实体同步待遇不同**：`projects` 是档案类（不带 client_id 与软删列，走全量拉取覆盖）→ **不写 changes**；`memberships` 是客户端可写实体 → **每次写都 `record_change` 且同事务**（§5.2 / §2.2）。③ **移除成员用软删**，再加回来时**恢复同一行**而非新建 —— `uniq(user_id, project_id)` 不含 `deleted_at`，新建必撞唯一约束。另：`MemberCreate` 只收 `role_code` 不收权限点，快照由服务端按 `roles` 当前值填，与「改角色时刷新快照」同一条路径（§3.1：权限点只有一处事实来源）。`DELETE` 路径写成 `/members/{user_id}` —— §4.3 的 `DELETE /projects/{id}/members` 是简写形式，删成员必须指明是谁 |
 | v3.9 | 2026-10-14 | **修`0001` 的 `create_all` 越界（CI 从零建库失败）**：`0001` 用 `Base.metadata.create_all()` 建表，而 `create_all` 建的是**当前代码里**全部模型表 —— 后来新增的 `refresh_tokens` 会先被 `0001` 建出来，`0002` 再 `create_table` 就撞 `DuplicateTableError`。本地没暴露是因为加模型**之前**就跑过 `upgrade head`（本地 `alembic_version` 已是 `0002`，`0001` 不会重跑），**CI 全新库从零跑必撞**。修法：`0001` 显式排除后续迁移负责的表（`_LATER_TABLES`），`create_all` / `drop_all` 都只作用于「本迁移时刻」的表。**由此确立一条约定：此后每加一个新表，必须登记进 `0001._LATER_TABLES`，否则从零建库必失败**（`0001` 是唯一用 `create_all` 的迁移，`autogenerate` 生成的迁移只建自己的表，不受此影响）。已验证：全新库 `upgrade head` → `alembic check` 无漂移 → `downgrade base` 无残留（仅 `alembic_version`）→ 再 upgrade 正常 |
 | v3.8 | 2026-10-14 | **修掉三处指向不存在章节的引用 + 关闭三条「假待定」**。① §10 开篇写「责任边界（11.1）」「对应用代码的约束（11.2），以及待确认项（11.3）」—— v3.4 前移后这三节变成 §10.1 / §10.2 / §10.3，而 §11 是「实施路线」，**§11.1 / §11.2 / §11.3 根本不存在**；且这三处**不带 § 符号**，此前按 `§N` 检索的校验完全漏掉了它们（该校验只查「章节是否存在」，查不出「章节存在但内容不对」）。② §13 关闭原 8 / 9 / 10 三条：首个管理员账号（**建库时 seed**，`scripts/seed.py` 已实现）、推送通道（**第一版只做站内消息**）、Redis 时机（**第一版不装**，`refresh_tokens` 已按落表落地）—— 这三条早有定论却一直挂在「待定项」表里，**留着会让「待定」二字失去意义**。关闭后保留「原 #」标注，使文中已有的引用（如「§13 第 10 条」）仍能查到结论 |

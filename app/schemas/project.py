@@ -5,6 +5,7 @@
 
 from datetime import datetime
 
+from app.schemas.auth import UserBrief
 from app.schemas.common import CamelModel
 
 
@@ -74,3 +75,33 @@ class MemberOut(CamelModel):
     disciplines: list[str] = []
     permissions: list[str] = []
     status: str
+
+
+class InviteCreate(CamelModel):
+    """就地建号（§4.3）：成员页填「姓名 + 手机号 + 单位」，同一个请求里建号 + 建成员关系。
+
+    **登录名怎么来**：`username` 不传就用 `phone` —— 手机号对施工方 / 设计人员本来就是
+    天然记忆点，让管理员另起一个登录名反而多记一样东西。两个都不传则无法确定唯一登录名
+    （`users.username` 唯一，§4.3 明确要求防重）。
+    """
+
+    name: str
+    phone: str | None = None
+    username: str | None = None
+    org_id: str | None = None
+    role_code: str
+    disciplines: list[str] = []
+
+
+class InviteResult(CamelModel):
+    """「返回可用账号」的载体（§4.3）。
+
+    `initial_password` **只在本次新建用户时返回一次**，库里存的永远是 scrypt 哈希。
+    界面上应当只弹一次、关掉就没了 —— 这是当前选定的初始凭据策略，
+    §13 第 6 条（管理员设初始密码 vs 一次性口令）仍待定，改这里要同步改文档。
+    """
+
+    user: UserBrief
+    member: MemberOut
+    created_user: bool
+    initial_password: str | None = None
