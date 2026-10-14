@@ -84,8 +84,9 @@ class ProgressEntry(SyncColumns, Base):
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=new_id)
     project_id: Mapped[str] = mapped_column(String(64), nullable=False)
     milestone_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # 取值与客户端的四个常量一致：not_started / in_progress / done / delayed
     status: Mapped[str] = mapped_column(
-        String(32), nullable=False, default="pending", server_default="pending"
+        String(32), nullable=False, default="not_started", server_default="not_started"
     )
     date: Mapped[datetime | None] = mapped_column(Date, nullable=True)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)

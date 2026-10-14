@@ -35,8 +35,20 @@ BUILTIN_ROLES: tuple[tuple[str, str, str, int], ...] = (
     ("viewer", "只读（业主 / 监理）", "本项目 · 只读", 60),
 )
 
-# 专业字典（§2.3）：第一版只 structure 一条；扩展必须与客户端 DefectCategory 枚举同步发版
-DISCIPLINES: tuple[tuple[str, str, int], ...] = (("structure", "结构", 10),)
+# 专业字典（§2.3）
+# 取值与客户端 `account.dart` 的 `Discipline` 常量**一一对应**（含 `other` 兜底位，
+# 客户端 `fromCode` 对未知 code 回落到它）。第一版曾只 seed `structure` 一条，导致
+# 客户端按专业过滤时失真 —— 现在按客户端清单补全 7 条。
+# 扩展清单必须与客户端 `Discipline` 同步发版。
+DISCIPLINES: tuple[tuple[str, str, int], ...] = (
+    ("architecture", "建筑", 10),
+    ("structure", "结构", 20),
+    ("decoration", "装饰", 30),
+    ("water", "给排水", 40),
+    ("hvac", "暖通", 50),
+    ("electric", "电气", 60),
+    ("other", "其他", 99),
+)
 
 # 演示账号（初始化即有，省得联调时还要现建人）
 DEMO_USERS: tuple[tuple[str, str, str], ...] = (

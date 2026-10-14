@@ -41,7 +41,10 @@ class Defect(SyncColumns, Base):
     category: Mapped[str | None] = mapped_column(String(32), nullable=True)
     severity: Mapped[str | None] = mapped_column(String(32), nullable=True)
     importance: Mapped[str | None] = mapped_column(String(32), nullable=True)
-    status: Mapped[str] = mapped_column(String(32), nullable=False, default="open", server_default="open")
+    # 取值与客户端 `enum DefectStatus { draft, doing, done, reject }` 严格一致。
+    # ⚠️ 早期这里默认值是 'open'，客户端回落值却是 'draft' —— 两边默认值不同会让
+    # 「未指定状态」的行在客户端显示成 draft、在服务端是 open，语义悄悄漂移。
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft", server_default="draft")
     anchor: Mapped[str | None] = mapped_column(String(128), nullable=True)
     floor: Mapped[str | None] = mapped_column(String(64), nullable=True)
     building: Mapped[str | None] = mapped_column(String(64), nullable=True)
