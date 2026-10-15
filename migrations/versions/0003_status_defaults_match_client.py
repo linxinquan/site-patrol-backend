@@ -31,14 +31,14 @@ def upgrade() -> None:
         "defects",
         "status",
         existing_type=sa.String(length=32),
-        nullable=False,
+        existing_nullable=False,
         server_default="draft",
     )
     op.alter_column(
         "progress_entries",
         "status",
         existing_type=sa.String(length=32),
-        nullable=False,
+        existing_nullable=False,
         server_default="not_started",
     )
 
@@ -48,13 +48,13 @@ def downgrade() -> None:
         "defects",
         "status",
         existing_type=sa.String(length=32),
-        nullable=False,
+        existing_nullable=False,
         server_default="open",
     )
     op.alter_column(
         "progress_entries",
         "status",
         existing_type=sa.String(length=32),
-        nullable=False,
+        existing_nullable=False,
         server_default="pending",
     )
