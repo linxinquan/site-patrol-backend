@@ -81,7 +81,9 @@ class Defect(SyncColumns, Base):
 
     # 当前态：销项与设计处置
     close_note: Mapped[str | None] = mapped_column(Text, nullable=True)
-    completion: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # 整改进度是**文本**（客户端给的是 '未开始' / '进行中' / '已完成'），
+    # 不是 0-1 的小数。建表时误定义成 Float，被 demo 数据比对抓出来。
+    completion: Mapped[str | None] = mapped_column(String(32), nullable=True)
     designer_action: Mapped[str | None] = mapped_column(String(32), nullable=True)
     designer_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     designer_by_id: Mapped[str | None] = mapped_column(String(64), nullable=True)

@@ -13,6 +13,10 @@
 跑不了 `alembic revision --autogenerate`。改动只有两个 server_default，
 可逐行对照 `app/models/defect.py` 与 `app/models/project.py` 复核；
 PG 恢复后 `alembic check` 会验证它与模型一致。
+
+⚠️ revision id 曾经写成 `0003_status_defaults_match_client` —— **33 字符，超出
+`alembic_version.version_num` 的 VARCHAR(32)**，执行时报
+`StringDataRightTruncationError`。已缩短。**起 revision id 别超 32 字符**。
 """
 
 from typing import Sequence, Union
@@ -20,7 +24,7 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0003_status_defaults_match_client"
+revision: str = "0003_status_match_client"
 down_revision: Union[str, None] = "0002_refresh_tokens"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

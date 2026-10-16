@@ -55,7 +55,9 @@ class DrawingVersion(Base):
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=new_id)
     drawing_id: Mapped[str] = mapped_column(String(64), nullable=False)
-    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    # 版本号是**字符串**（客户端给的是 'V1.0' 这类图面版本号），不是数字序号。
+    # 建表时误定义成 Integer，被 demo 数据比对抓出来。
+    version: Mapped[str] = mapped_column(String(32), nullable=False, server_default="V1.0")
     version_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # draft / published / archived
     state: Mapped[str] = mapped_column(String(16), nullable=False, default="draft", server_default="draft")

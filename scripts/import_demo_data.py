@@ -15,11 +15,12 @@
 import argparse
 import asyncio
 import json
-from datetime import datetime
+import re
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import delete, select, text
+from sqlalchemy import Date, DateTime, Float, Integer, delete, select, text
 
 import app.models  # noqa: F401 —— 让全部模型注册进 metadata
 from app.db.base import Base
@@ -50,10 +51,51 @@ ORDER: tuple[str, ...] = (
 _PRESERVE_ON_TRUNCATE = {"users", "refresh_tokens"}
 
 
-def parse_dt(value: Any) -> Any:
-    """ISO8601 字符串 → datetime；asyncpg 不接受字符串形式的 timestamptz。"""
-    if isinstance(value, str) and value.strip():
-        return datetime.fromisoformat(value)
+# 数值列偶尔会收到 APP 侧的**带单位展示文本**：'12.62万㎡' / '海拔 -4.2m'。
+# 直接丢会丢信息，所以提取数字并按中文单位换算；实在提不出就置 NULL 并记账。
+_NUM_RE = re.compile(r"(-?\d+(?:\.\d+)?)\s*(万|亿)?")
+_CN_MULT = {"万": 10_000, "亿": 100_000_000}
+
+
+def coerce(col, value: Any, notes: list[str]) -> Any:
+    """按**列类型**决定怎么转换；转不了的记进 notes，不静默丢数据。"""
+    if value is None:
+        return None
+
+    if isinstance(col.type, DateTime):
+        if not isinstance(value, str) or not value.strip():
+            notes.append(f"{col.table.name}.{col.name}: {value!r} 不是时间 → NULL")
+            return None
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            notes.append(f"{col.table.name}.{col.name}: {value!r} 非法 ISO → NULL")
+            return None
+
+    # Date 列（progress_entries.date）要的是 datetime.date，不是 datetime
+    if isinstance(col.type, Date):
+        if not isinstance(value, str):
+            notes.append(f"{col.table.name}.{col.name}: {value!r} 不是日期 → NULL")
+            return None
+        try:
+            return date.fromisoformat(value)
+        except ValueError:
+            notes.append(f"{col.table.name}.{col.name}: {value!r} 非法日期 → NULL")
+            return None
+
+    if isinstance(col.type, (Float, Integer)) and isinstance(value, str):
+        # '12.62万㎡' → 126200.0；'64057㎡' → 64057.0；'海拔 -4.2m' → -4.2
+        match = _NUM_RE.search(value)
+        if match is None:
+            notes.append(f"{col.table.name}.{col.name}: {value!r} 提不出数字 → NULL")
+            return None
+        number = float(match.group(1))
+        if match.group(2):
+            # round 一下：12.62 * 10000 直接算会得到 126199.99999999999，
+            # 面积这种量级的小数噪声没必要留着
+            number = round(number * _CN_MULT[match.group(2)], 6)
+        return int(number) if isinstance(col.type, Integer) else number
+
     return value
 
 
@@ -67,7 +109,7 @@ def load_rows(src: Path, table: str) -> list[dict]:
     return data
 
 
-async def resolve_membership_users(session, rows: list[dict]) -> None:
+async def resolve_membership_users(session, rows: list[dict], notes: list[str]) -> None:
     """把 `user_ref`（= `users.username`）回填成 `user_id`。
 
     回答 demo_data/README.md §2③ 那个待确认项：后端 `users.id` 是服务端生成的 uuid
@@ -78,13 +120,19 @@ async def resolve_membership_users(session, rows: list[dict]) -> None:
     refs = {r["user_ref"] for r in rows if r.get("user_ref")}
     if not refs:
         return
-    found = dict(
-        (
+    # 注意方向：我们要 username -> id。写成 dict(...rows) 会把 uuid 当 key、
+    # username 当 value（Row 就是个二元组），结果是永远查不到。
+    found = {
+        username: uid
+        for uid, username in (
             await session.execute(
                 select(table.c.id, table.c.username).where(table.c.username.in_(refs))
             )
         ).all()
-    )
+    }
+    missing = refs - set(found)
+    if missing:
+        notes.append(f"users 里找不到 {sorted(missing)}，这些成员行的 user_id 将为空")
     for row in rows:
         ref = row.pop("user_ref", None)
         if ref is not None:
@@ -148,19 +196,20 @@ async def wipe(session, tables: list[str]) -> None:
     await session.execute(text("ALTER SEQUENCE changes_seq_seq RESTART WITH 1"))
 
 
-async def import_table(session, src: Path, table: str) -> int:
+async def import_table(session, src: Path, table: str) -> tuple[int, list[str]]:
     rows = load_rows(src, table)
     meta = Base.metadata.tables[table]
     cols = {c.name for c in meta.columns}
+    notes: list[str] = []
 
     if table == "memberships":
-        await resolve_membership_users(session, rows)
+        await resolve_membership_users(session, rows, notes)
         await fill_membership_snapshots(session, rows)
 
     payload: list[dict] = []
     for row in rows:
         # 多出来的字段是 APP 展示字段（ts / drawing_key / resp…），库里没有对应列
-        record = {k: parse_dt(v) for k, v in row.items() if k in cols}
+        record = {k: coerce(meta.c[k], v, notes) for k, v in row.items() if k in cols}
         if "created_at" in cols and not record.get("created_at"):
             record["created_at"] = record.get("server_updated_at") or datetime.now().astimezone()
         if "server_updated_at" in cols and not record.get("server_updated_at"):
@@ -169,7 +218,7 @@ async def import_table(session, src: Path, table: str) -> int:
 
     if payload:
         await session.execute(meta.insert(), payload)
-    return len(payload)
+    return len(payload), notes
 
 
 async def main() -> None:
@@ -205,12 +254,20 @@ async def main() -> None:
             print("[import] 已清空 " + ", ".join(available))
 
         total = 0
+        all_notes: list[str] = []
         for table in available:
-            n = await import_table(session, args.src, table)
+            n, notes = await import_table(session, args.src, table)
             total += n
+            all_notes.extend(notes)
             print(f"  {table:<20} {n:>4} 条")
         await session.commit()
         print(f"[import] 完成，共 {total} 行")
+
+        if all_notes:
+            unique = list(dict.fromkeys(all_notes))
+            print(f"\n[import] 值做了转换或置空 {len(all_notes)} 处（不是静默丢弃）：")
+            for note in unique:
+                print(f"  - {note}")
 
     await dispose_engine()
 
